@@ -1,11 +1,9 @@
 use crate::keyboard::Keyboard;
 use crate::display::Display;
 use crate::cpu::Cpu;
-use crate::ram::ram;
+use crate::ram::Ram;
 
 pub struct Chip8 {
-    delay_timer: u8,
-    sound_timer: u8,
     keyboard: Keyboard,
     display: Display,
     cpu: Cpu,
@@ -21,8 +19,6 @@ impl Chip8 {
         //}
 
         Chip8 {
-            delay_timer: 0,
-            sound_timer: 0,
             keyboard: Keyboard::new(),
             display: Display::new(),
             cpu: Cpu::new(),
@@ -30,24 +26,14 @@ impl Chip8 {
         }
     }
 
-    pub fn emulate_cycle(self) {
+    pub fn emulate_cycle(mut self) {
         let ram = self.ram;
         let pc = self.cpu.pc;
 
         self.cpu.execute_opcode(
             ram.memory[pc as usize] | ram.memory[(pc + 1) as usize],
+            self.display,
             ram
         );
-
-        if delay_timer > 0 {
-            delay_timer -= 1;
-        }
-
-        if sound_timer > 0 {
-            if sound_timer == 1 {
-                print!("BEEP!\n");
-            }
-            sound_timer -= 1;
-        }
     }
 }
