@@ -75,17 +75,46 @@ impl Cpu {
             },
             0x8000 => {
                 match opcode & 0x000F {
-                    0x0000 => {},
-                    0x0001 => {},
-                    0x0002 => {},
-                    0x0003 => {},
-                    0x0004 => {},
-                    0x0005 => {},
-                    0x0006 => {},
-                    0x0007 => {},
-                    0x000E => {},
+                    0x0000 => ram.v[x as usize] = ram.v[y as usize],
+                    0x0001 => ram.v[x as usize] = ram.v[x as usize] | ram.v[y as usize],
+                    0x0002 => ram.v[x as usize] = ram.v[x as usize] & ram.v[y as usize],
+                    0x0003 => ram.v[x as usize] = ram.v[x as usize] ^ ram.v[y as usize],
+                    0x0004 => {
+                        ram.v[x as usize] += ram.v[y as usize];
+                        if ram.v[x as usize] + ram.v[y as usize] > 0xFF {
+                            ram.v[0xF as usize] = 1;
+                        } else {
+                            ram.v[0xF as usize] = 0;
+                        }
+                    },
+                    0x0005 => {
+                        ram.v[x as usize] -= ram.v[y as usize];
+                        if ram.v[x as usize] - ram.v[y as usize] > 0xFF {
+                            ram.v[0xF as usize] = 0;
+                        } else {
+                            ram.v[0xF as usize] = 1;
+                        }
+                    },
+                    0x0006 => {
+                        ram.v[0xF as usize] = ram.v[x as usize] & 0x1;
+                        ram.v[x as usize] = ram.v[x as usize] >> 1;
+                    },
+                    0x0007 => {
+                        let res = ram.v[y as usize] - ram.v[x as usize];
+                        ram.v[x as usize] = res;
+                        if res > 0xFF {
+                            ram.v[0xF as usize] = 0;
+                        } else {
+                            ram.v[0xF as usize] = 1;
+                        }
+                    },
+                    0x000E => {
+                        ram.v[0xF as usize] = (ram.v[x as usize] & 0x80) >> 7;
+                        ram.v[x as usize] = ram.v[x as usize] << 1;
+                    },
                     _ => panic!("Unknown opcode [0x8000]: {:#X}", opcode),
                 }
+                self.pc += 2
             },
             0x9000 => {},
             0xA000 => {},
