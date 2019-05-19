@@ -1,6 +1,10 @@
 use chip8::Chip8;
 
 mod chip8;
+mod keyboard;
+mod display;
+mod cpu;
+mod ram;
 
 fn main() {
     // setup graphics & input
