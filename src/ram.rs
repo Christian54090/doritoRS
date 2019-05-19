@@ -1,5 +1,5 @@
 pub struct Ram {
-    memory: [u8; 4096],
+    pub memory: [u16; 4096],
     stack: [u8; 16],
     sp: u8,
 }
