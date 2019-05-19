@@ -21,6 +21,12 @@ impl Cpu {
     }
 
     pub fn execute_opcode(mut self, opcode: u16, mut display: Display, mut ram: Ram) {
+        let nnn = opcode & 0x0FFF;
+        let nn = opcode & 0x00FF;
+        let n = opcode & 0x000F;
+        let x = (opcode & 0x0F00) >> 8;
+        let y = (opcode & 0x00F0) >> 4;
+
         match opcode & 0xF000 {
             0x0000 => {
                 match opcode & 0x000F {
@@ -32,46 +38,39 @@ impl Cpu {
                     _ => panic!("Unknown opcode [0x0000]: {:#X}", opcode),
                 }
             },
-            0x1000 => self.pc = opcode & 0x0FFF,
+            0x1000 => self.pc = nnn,
             0x2000 => {
-                ram.stack[ram.sp as usize] = self.pc;
+                ram.stack.push(self.pc);
                 ram.sp += 1;
-                self.pc = opcode & 0x0FFF;
+                self.pc = nnn;
             },
-            0x3000 => {
-                let vx = ram.v[(opcode & 0x0F00) as usize];
-                let nn = opcode & 0x00FF;
-                if vx == nn {
+            0x3000 => { // if vx == nn
+                if ram.v[x as usize] == nn {
                     self.pc += 4;
                 } else {
                     self.pc += 2;
                 }
             },
-            0x4000 => {
-                let vx = ram.v[(opcode & 0x0F00) as usize];
-                let nn = opcode & 0x00FF;
-                if vx != nn {
+            0x4000 => { // if vx != nn
+                if ram.v[x as usize] != nn {
                     self.pc += 4
                 } else {
                     self.pc += 2
                 }
             },
-            0x5000 => {
-                let vx = ram.v[(opcode & 0x0F00) as usize];
-                let vy = ram.v[(opcode & 0x00F0) as usize];
-                if vx == vy {
+            0x5000 => { // if vx == vy
+                if ram.v[x as usize] == ram.v[y as usize] {
                     self.pc += 4;
                 } else {
                     self.pc += 2;
                 }
             },
-            0x6000 => {
-                ram.v[(opcode & 0x00F0) as usize] = (opcode & 0x00FF);
+            0x6000 => { // vx = nn
+                ram.v[y as usize] = nn;
                 self.pc += 2;
             },
-            0x7000 => {
-                let x = (opcode & 0x0F00) as usize;
-                ram.v[x] = ram.v[x].wrapping_add(opcode & 0x00FF);
+            0x7000 => { // vx += nn
+                ram.v[x as usize] = ram.v[x as usize].wrapping_add(nn);
                 self.pc += 2;
             },
             0x8000 => {
