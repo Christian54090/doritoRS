@@ -50,8 +50,8 @@ impl Cpu {
             0xD000 => {},
             0xE000 => {
                 match opcode & 0x000F {
-                    0xE00E => {},
-                    0xE001 => {},
+                    0x000E => {},
+                    0x0001 => {},
                     _ => panic!("Unknown opcode [0xE000]: {:#X}", opcode),
                 }
             },
