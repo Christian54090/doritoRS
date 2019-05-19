@@ -1,12 +1,13 @@
 use crate::display::Display;
 use crate::ram::Ram;
+use rand::prelude::*;
 
 pub struct Cpu {
     delay_timer: u8,
     sound_timer: u8,
     registers: [u8; 16],
     pub pc: u16,
-    i: u8,
+    i: u16,
 }
 
 impl Cpu {
@@ -93,11 +94,12 @@ impl Cpu {
                         }
                     },
                     0x0005 => {
-                        ram.v[x] -= vy;
-                        if vx - vy > 0xFF {
-                            ram.v[f] = 0;
-                        } else {
+                        let res = (vx as i8) - (vy as i8);
+                        ram.v[x] = res as u16;
+                        if res < 0 {
                             ram.v[f] = 1;
+                        } else {
+                            ram.v[f] = 0;
                         }
                     },
                     0x0006 => {
@@ -105,12 +107,12 @@ impl Cpu {
                         ram.v[x] = vx >> 1;
                     },
                     0x0007 => {
-                        let res = ((vy as i8) - (vx as i8)) as u16;
-                        ram.v[x] = res;
-                        if res > 0xFF {
-                            ram.v[f] = 0;
-                        } else {
+                        let res = (vy as i8) - (vx as i8);
+                        ram.v[x] = res as u16;
+                        if res < 0 {
                             ram.v[f] = 1;
+                        } else {
+                            ram.v[f] = 0;
                         }
                     },
                     0x000E => {
@@ -121,11 +123,27 @@ impl Cpu {
                 }
                 self.pc += 2
             },
-            0x9000 => {},
-            0xA000 => {},
-            0xB000 => {},
-            0xC000 => {},
-            0xD000 => {},
+            0x9000 => {
+                if vx != vy {
+                    self.pc += 4;
+                } else {
+                    self.pc += 2;
+                }
+            },
+            0xA000 => {
+                self.i = nnn;
+                self.pc += 2;
+            },
+            0xB000 => self.pc = ram.v[0] + nnn,
+            0xC000 => {
+                let mut rand = thread_rng();
+                ram.v[x] = nn & rand.gen_range(0, 256);
+                self.pc += 2;
+            },
+            0xD000 => {
+                display.draw(vx, vx, n);
+                self.pc += 2;
+            },
             0xE000 => {
                 match opcode & 0x000F {
                     0x000E => {},

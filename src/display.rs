@@ -10,4 +10,6 @@ impl Display {
     pub fn clear(mut self) {
         self.gfx = [[0; 64]; 32]
     }
+
+    pub fn draw(mut self, x: u16, y: u16, height: u16) {}
 }
