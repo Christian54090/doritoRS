@@ -32,6 +32,7 @@ impl Chip8 {
 
         self.cpu.execute_opcode(
             ram.memory[pc as usize] | ram.memory[(pc + 1) as usize],
+            self.keyboard,
             self.display,
             ram
         );

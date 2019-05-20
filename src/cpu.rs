@@ -1,10 +1,11 @@
+use crate::keyboard::Keyboard;
 use crate::display::Display;
 use crate::ram::Ram;
 use rand::prelude::*;
 
 pub struct Cpu {
-    delay_timer: u8,
-    sound_timer: u8,
+    delay_timer: u16,
+    sound_timer: u16,
     registers: [u8; 16],
     pub pc: u16,
     i: u16,
@@ -21,7 +22,7 @@ impl Cpu {
         }
     }
 
-    pub fn execute_opcode(mut self, opcode: u16, mut display: Display, mut ram: Ram) {
+    pub fn execute_opcode(mut self, opcode: u16, kb: Keyboard, dis: Display, mut ram: Ram) {
         let nnn = opcode & 0x0FFF;
         let nn = opcode & 0x00FF;
         let n = opcode & 0x000F;
@@ -35,7 +36,7 @@ impl Cpu {
             0x0000 => {
                 match opcode & 0x000F {
                     0x0000 => {
-                        display.clear();
+                        dis.clear();
                         self.pc += 2;
                     },
                     0x000E => self.pc = ram.stack.pop().unwrap(),
@@ -141,27 +142,84 @@ impl Cpu {
                 self.pc += 2;
             },
             0xD000 => {
-                display.draw(vx, vx, n);
+                dis.draw(vx, vx, n);
                 self.pc += 2;
             },
             0xE000 => {
                 match opcode & 0x000F {
-                    0x000E => {},
-                    0x0001 => {},
+                    0x000E => {
+                        if kb.is_key_pressed(vx) {
+                            self.pc += 4;
+                        } else {
+                            self.pc += 2;
+                        }
+                    },
+                    0x0001 => {
+                        if !kb.is_key_pressed(vx) {
+                            self.pc += 4;
+                        } else {
+                            self.pc += 2;
+                        }
+                    },
                     _ => panic!("Unknown opcode [0xE000]: {:#X}", opcode),
                 }
             },
             0xF000 => {
                 match opcode & 0x00FF {
-                    0x0007 => {},
-                    0x000A => {},
-                    0x0015 => {},
-                    0x0018 => {},
-                    0x001E => {},
-                    0x0029 => {},
-                    0x0033 => {},
-                    0x0055 => {},
-                    0x0065 => {},
+                    0x0007 => {
+                        ram.v[x] = self.delay_timer;
+                        self.pc += 2;
+                    },
+                    0x000A => {
+                        let mut key = 0;
+                        for i in 0..16 {
+                            if kb.keys[i] != 0 {
+                                key = i as u16;
+                            }
+                        }
+
+                        if kb.get_key() {
+                            ram.v[x] = key;
+                            self.pc += 2;
+                        }
+                    },
+                    0x0015 => {
+                        self.delay_timer = vx;
+                        self.pc += 2;
+                    },
+                    0x0018 => {
+                        self.sound_timer = vx;
+                        self.pc += 2;
+                    },
+                    0x001E => {
+                        self.i += vx;
+                        self.pc += 2;
+                    },
+                    0x0029 => {
+                        self.i = vx * 5; // each sprite is 5 lines long
+                        self.pc += 2;
+                    },
+                    0x0033 => {
+                        let i = self.i as usize;
+                        ram.memory[i] = vx / 100;
+                        ram.memory[i + 1] = (vx % 100) / 10;
+                        ram.memory[i + 2] = vx % 10;
+                        self.pc += 2;
+                    },
+                    0x0055 => {
+                        for idx in 0..x + 1 {
+                            ram.memory[(self.i + idx as u16) as usize] = ram.v[idx]
+                        }
+                        self.i += x as u16 + 1;
+                        self.pc += 2;
+                    },
+                    0x0065 => {
+                        for idx in 0..x + 1 {
+                            ram.v[idx] = ram.memory[(self.i + idx as u16) as usize]
+                        }
+                        self.i += x as u16 + 1;
+                        self.pc += 2;
+                    },
                     _ => panic!("Unknown opcode [0xF000]: {:#X}", opcode),
                 }
             },
