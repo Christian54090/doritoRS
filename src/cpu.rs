@@ -22,7 +22,7 @@ impl Cpu {
         }
     }
 
-    pub fn execute_opcode(mut self, opcode: u16, kb: Keyboard, dis: Display, mut ram: Ram) {
+    pub fn execute_opcode(mut self, opcode: u16, kb: Keyboard, mut dis: Display, mut ram: Ram) {
         let nnn = opcode & 0x0FFF;
         let nn = opcode & 0x00FF;
         let n = opcode & 0x000F;
@@ -142,7 +142,18 @@ impl Cpu {
                 self.pc += 2;
             },
             0xD000 => {
-                dis.draw(vx, vx, n);
+                let mut flipped_px = false;
+                for y_idx in 0..n {
+                    let byte = ram.memory[(self.i + y_idx) as usize];
+                    if dis.draw(byte, vx as usize, (vy + y_idx) as usize) {
+                        let mut flipped_px = true;
+                    }
+                }
+                if flipped_px {
+                    ram.v[0xF] = 1;
+                } else {
+                    ram.v[0xF] = 0;
+                }
                 self.pc += 2;
             },
             0xE000 => {
@@ -202,8 +213,8 @@ impl Cpu {
                     0x0033 => {
                         let i = self.i as usize;
                         ram.memory[i] = vx / 100;
-                        ram.memory[i + 1] = (vx % 100) / 10;
-                        ram.memory[i + 2] = vx % 10;
+                        ram.memory[i + 1] = (vx / 10) % 10;
+                        ram.memory[i + 2] = (vx % 100) % 10;
                         self.pc += 2;
                     },
                     0x0055 => {
